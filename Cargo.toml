@@ -11,5 +11,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.28", features = ["extension-module"] }
-umya-spreadsheet = "2.3"
+umya-spreadsheet = { git = "https://github.com/wolfiesch/umya-spreadsheet", rev = "3e88efbe3f046759fa22f22e0a2e5dfa05ec77dc" }
 chrono = "0.4"

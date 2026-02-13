@@ -1,7 +1,12 @@
 use pyo3::prelude::*;
 
 mod cell_ops;
+mod comment_ops;
+mod conditional_format_ops;
+mod data_validation_ops;
 mod format_ops;
+mod hyperlink_ops;
+mod image_ops;
 mod structural_ops;
 mod utils;
 mod workbook;

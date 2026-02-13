@@ -1,5 +1,6 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 
 use umya_spreadsheet::structs::{Coordinate, Pane, PaneStateValues, PaneValues, SheetView};
 use umya_spreadsheet::Spreadsheet;
@@ -122,6 +123,53 @@ pub(crate) fn get_freeze_panes(book: &Spreadsheet, sheet: &str) -> PyResult<Opti
     Ok(None)
 }
 
+pub(crate) fn read_freeze_panes_settings(
+    book: &Spreadsheet,
+    py: Python<'_>,
+    sheet: &str,
+) -> PyResult<Py<PyAny>> {
+    let ws = book
+        .get_sheet_by_name(sheet)
+        .ok_or_else(|| PyErr::new::<PyValueError, _>(format!("Unknown sheet: {sheet}")))?;
+
+    let d = PyDict::new(py);
+    for sv in ws.get_sheets_views().get_sheet_view_list() {
+        let Some(pane) = sv.get_pane() else {
+            continue;
+        };
+
+        match pane.get_state() {
+            PaneStateValues::Frozen | PaneStateValues::FrozenSplit => {
+                d.set_item("mode", "freeze")?;
+                let coord = pane.get_top_left_cell().to_string();
+                if !coord.is_empty() && coord != "A1" {
+                    d.set_item("top_left_cell", coord)?;
+                }
+                return Ok(d.into_any().unbind());
+            }
+            PaneStateValues::Split => {
+                d.set_item("mode", "split")?;
+                let xs = *pane.get_horizontal_split();
+                let ys = *pane.get_vertical_split();
+                if xs > 0.0 {
+                    d.set_item("x_split", xs.round() as i32)?;
+                }
+                if ys > 0.0 {
+                    d.set_item("y_split", ys.round() as i32)?;
+                }
+                let coord = pane.get_top_left_cell().to_string();
+                if !coord.is_empty() && coord != "A1" {
+                    d.set_item("top_left_cell", coord)?;
+                }
+                return Ok(d.into_any().unbind());
+            }
+        }
+    }
+
+    d.set_item("mode", "none")?;
+    Ok(d.into_any().unbind())
+}
+
 pub(crate) fn set_freeze_panes(
     book: &mut Spreadsheet,
     sheet: &str,
@@ -167,6 +215,83 @@ pub(crate) fn set_freeze_panes(
         pane.set_active_pane(PaneValues::BottomLeft);
     } else {
         pane.set_active_pane(PaneValues::BottomRight);
+    }
+
+    let sv_list = ws.get_sheet_views_mut().get_sheet_view_list_mut();
+    if sv_list.is_empty() {
+        sv_list.push(SheetView::default());
+    }
+    sv_list[0].set_pane(pane);
+    Ok(())
+}
+
+pub(crate) fn set_freeze_panes_settings(
+    book: &mut Spreadsheet,
+    sheet: &str,
+    settings: &Bound<'_, PyAny>,
+) -> PyResult<()> {
+    let payload = settings
+        .cast::<PyDict>()
+        .map_err(|_| PyErr::new::<PyValueError, _>("freeze settings must be a dict"))?;
+
+    let mode = payload
+        .get_item("mode")?
+        .and_then(|v| v.extract::<String>().ok())
+        .unwrap_or_else(|| "none".to_string());
+
+    if mode == "none" {
+        return set_freeze_panes(book, sheet, None);
+    }
+
+    if mode == "freeze" {
+        let top_left = payload
+            .get_item("top_left_cell")?
+            .and_then(|v| v.extract::<String>().ok());
+        return set_freeze_panes(book, sheet, top_left.as_deref());
+    }
+
+    if mode != "split" {
+        return Err(PyErr::new::<PyValueError, _>(format!(
+            "Invalid mode: {mode}"
+        )));
+    }
+
+    let xs = payload
+        .get_item("x_split")?
+        .and_then(|v| v.extract::<i32>().ok())
+        .unwrap_or(0);
+    let ys = payload
+        .get_item("y_split")?
+        .and_then(|v| v.extract::<i32>().ok())
+        .unwrap_or(0);
+
+    if xs == 0 && ys == 0 {
+        return set_freeze_panes(book, sheet, None);
+    }
+
+    let ws = book
+        .get_sheet_by_name_mut(sheet)
+        .ok_or_else(|| PyErr::new::<PyValueError, _>(format!("Unknown sheet: {sheet}")))?;
+
+    let mut pane = Pane::default();
+    if xs > 0 {
+        pane.set_horizontal_split(xs as f64);
+    }
+    if ys > 0 {
+        pane.set_vertical_split(ys as f64);
+    }
+    pane.set_state(PaneStateValues::Split);
+    pane.set_active_pane(PaneValues::BottomRight);
+
+    if let Some(tlc) = payload
+        .get_item("top_left_cell")?
+        .and_then(|v| v.extract::<String>().ok())
+    {
+        if !tlc.trim().is_empty() {
+            let mut coord = Coordinate::default();
+            coord.set_coordinate(tlc);
+            pane.set_top_left_cell(coord);
+        }
     }
 
     let sv_list = ws.get_sheet_views_mut().get_sheet_view_list_mut();
