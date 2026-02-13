@@ -1,6 +1,9 @@
 use pyo3::prelude::*;
 
+mod cell_ops;
+mod utils;
 mod workbook;
+mod worksheet;
 
 /// pyumya._rust -- Rust backend for pyumya
 ///
