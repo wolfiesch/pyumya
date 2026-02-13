@@ -112,6 +112,37 @@ class Worksheet:
         return int(self._workbook._rust.sheet_max_column(self._title))
 
     # ---------------------------------------------------------------------
+    # Structural features
+    # ---------------------------------------------------------------------
+
+    def merge_cells(self, range_string: str) -> None:
+        self._workbook._rust.merge_cells(self._title, str(range_string))
+
+    def unmerge_cells(self, range_string: str) -> None:
+        self._workbook._rust.unmerge_cells(self._title, str(range_string))
+
+    @property
+    def merged_cells(self) -> MergedCells:
+        return MergedCells(self)
+
+    @property
+    def freeze_panes(self) -> str | None:
+        return self._workbook._rust.get_freeze_panes(self._title)
+
+    @freeze_panes.setter
+    def freeze_panes(self, a1: str | None) -> None:
+        # Rust signature accepts Option[str].
+        self._workbook._rust.set_freeze_panes(self._title, a1)
+
+    @property
+    def row_dimensions(self) -> RowDimensions:
+        return RowDimensions(self)
+
+    @property
+    def column_dimensions(self) -> ColumnDimensions:
+        return ColumnDimensions(self)
+
+    # ---------------------------------------------------------------------
     # Internal helpers used by Cell
     # ---------------------------------------------------------------------
 
@@ -153,3 +184,102 @@ class Worksheet:
 
     def _rust_write_cell_payload(self, a1: str, payload: dict[str, Any]) -> None:
         self._workbook._rust.write_cell_value(self._title, a1, payload)
+
+    def _rust_read_cell_format(self, a1: str) -> dict[str, Any]:
+        d = self._workbook._rust.read_cell_format(self._title, a1)
+        if isinstance(d, dict):
+            return d
+        return {}
+
+    def _rust_write_cell_format(self, a1: str, payload: dict[str, Any]) -> None:
+        self._workbook._rust.write_cell_format(self._title, a1, payload)
+
+    def _rust_read_cell_border(self, a1: str) -> dict[str, Any]:
+        d = self._workbook._rust.read_cell_border(self._title, a1)
+        if isinstance(d, dict):
+            return d
+        return {}
+
+    def _rust_write_cell_border(self, a1: str, payload: dict[str, Any]) -> None:
+        self._workbook._rust.write_cell_border(self._title, a1, payload)
+
+    def _rust_read_row_height(self, row: int) -> float | None:
+        v = self._workbook._rust.read_row_height(self._title, int(row))
+        return None if v is None else float(v)
+
+    def _rust_set_row_height(self, row: int, height: float) -> None:
+        self._workbook._rust.set_row_height(self._title, int(row), float(height))
+
+    def _rust_read_column_width(self, col_letter: str) -> float | None:
+        v = self._workbook._rust.read_column_width(self._title, str(col_letter))
+        return None if v is None else float(v)
+
+    def _rust_set_column_width(self, col_letter: str, width: float) -> None:
+        self._workbook._rust.set_column_width(self._title, str(col_letter), float(width))
+
+    def _rust_get_merged_ranges(self) -> list[str]:
+        return list(self._workbook._rust.get_merged_ranges(self._title))
+
+
+class RowDimension:
+    def __init__(self, ws: Worksheet, idx: int) -> None:
+        self._ws = ws
+        self._idx = idx
+
+    @property
+    def height(self) -> float | None:
+        return self._ws._rust_read_row_height(self._idx)
+
+    @height.setter
+    def height(self, h: float | None) -> None:
+        if h is None:
+            # Clearing isn't implemented yet - treat as 0.
+            self._ws._rust_set_row_height(self._idx, 0.0)
+            return
+        self._ws._rust_set_row_height(self._idx, float(h))
+
+
+class RowDimensions:
+    def __init__(self, ws: Worksheet) -> None:
+        self._ws = ws
+
+    def __getitem__(self, idx: int) -> RowDimension:
+        return RowDimension(self._ws, int(idx))
+
+
+class ColumnDimension:
+    def __init__(self, ws: Worksheet, letter: str) -> None:
+        self._ws = ws
+        self._letter = letter
+
+    @property
+    def width(self) -> float | None:
+        return self._ws._rust_read_column_width(self._letter)
+
+    @width.setter
+    def width(self, w: float | None) -> None:
+        if w is None:
+            # Clearing isn't implemented yet - treat as 0.
+            self._ws._rust_set_column_width(self._letter, 0.0)
+            return
+        self._ws._rust_set_column_width(self._letter, float(w))
+
+
+class ColumnDimensions:
+    def __init__(self, ws: Worksheet) -> None:
+        self._ws = ws
+
+    def __getitem__(self, key: str) -> ColumnDimension:
+        letter = str(key).strip().upper()
+        if not letter:
+            raise KeyError("Column key cannot be empty")
+        return ColumnDimension(self._ws, letter)
+
+
+class MergedCells:
+    def __init__(self, ws: Worksheet) -> None:
+        self._ws = ws
+
+    @property
+    def ranges(self) -> list[str]:
+        return self._ws._rust_get_merged_ranges()

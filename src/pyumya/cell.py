@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
+from pyumya.styles import Alignment, Border, Font, PatternFill, Side, normalize_rgb
+
 
 if TYPE_CHECKING:  # pragma: no cover
     from pyumya.worksheet import Worksheet
@@ -118,3 +120,129 @@ class Cell:
             )
 
         self._ws._rust_write_cell_payload(self._coordinate, payload)
+
+    # ------------------------------------------------------------------
+    # Formatting
+    # ------------------------------------------------------------------
+
+    @property
+    def font(self) -> Font:
+        d = self._ws._rust_read_cell_format(self._coordinate)
+        return Font(
+            name=str(d.get("font_name", "Calibri")),
+            size=float(d.get("font_size", 11.0)),
+            bold=bool(d.get("bold", False)),
+            italic=bool(d.get("italic", False)),
+            underline=str(d.get("underline", "none")),
+            strikethrough=bool(d.get("strikethrough", False)),
+            color=normalize_rgb(str(d.get("font_color", "000000"))),
+        )
+
+    @font.setter
+    def font(self, font: Font) -> None:
+        self._ws._rust_write_cell_format(
+            self._coordinate,
+            {
+                "bold": bool(font.bold),
+                "italic": bool(font.italic),
+                "underline": str(font.underline),
+                "strikethrough": bool(font.strikethrough),
+                "font_name": str(font.name),
+                "font_size": float(font.size),
+                "font_color": normalize_rgb(font.color),
+            },
+        )
+
+    @property
+    def fill(self) -> PatternFill:
+        d = self._ws._rust_read_cell_format(self._coordinate)
+        bg = d.get("bg_color")
+        fill_type = d.get("fill_type")
+        if fill_type is None:
+            fill_type = "solid" if bg is not None else "none"
+        return PatternFill(fill_type=str(fill_type), fgColor=normalize_rgb(str(bg or "000000")))
+
+    @fill.setter
+    def fill(self, fill: PatternFill) -> None:
+        if fill.fill_type == "none":
+            self._ws._rust_write_cell_format(self._coordinate, {"fill_type": "none"})
+            return
+        self._ws._rust_write_cell_format(
+            self._coordinate,
+            {
+                "fill_type": str(fill.fill_type),
+                "bg_color": normalize_rgb(fill.fgColor),
+            },
+        )
+
+    @property
+    def alignment(self) -> Alignment:
+        d = self._ws._rust_read_cell_format(self._coordinate)
+        return Alignment(
+            horizontal=str(d.get("h_align", "general")),
+            vertical=str(d.get("v_align", "bottom")),
+            wrap_text=bool(d.get("wrap", False)),
+            text_rotation=int(d.get("rotation", 0)),
+        )
+
+    @alignment.setter
+    def alignment(self, alignment: Alignment) -> None:
+        self._ws._rust_write_cell_format(
+            self._coordinate,
+            {
+                "h_align": str(alignment.horizontal),
+                "v_align": str(alignment.vertical),
+                "wrap": bool(alignment.wrap_text),
+                "rotation": int(alignment.text_rotation),
+            },
+        )
+
+    @property
+    def number_format(self) -> str:
+        d = self._ws._rust_read_cell_format(self._coordinate)
+        return str(d.get("number_format", "General"))
+
+    @number_format.setter
+    def number_format(self, fmt: str) -> None:
+        self._ws._rust_write_cell_format(self._coordinate, {"number_format": str(fmt)})
+
+    @property
+    def border(self) -> Border:
+        d = self._ws._rust_read_cell_border(self._coordinate)
+
+        def side(key: str) -> Side:
+            raw = d.get(key)
+            if not isinstance(raw, dict):
+                return Side()
+            return Side(
+                style=str(raw.get("style", "none")),
+                color=normalize_rgb(str(raw.get("color", "000000"))),
+            )
+
+        diag = side("diagonal_up")
+        if diag.style == "none":
+            diag = side("diagonal_down")
+
+        return Border(
+            left=side("left"),
+            right=side("right"),
+            top=side("top"),
+            bottom=side("bottom"),
+            diagonal=diag,
+        )
+
+    @border.setter
+    def border(self, border: Border) -> None:
+        def sd(s: Side) -> dict[str, str]:
+            return {"style": str(s.style), "color": normalize_rgb(str(s.color))}
+
+        self._ws._rust_write_cell_border(
+            self._coordinate,
+            {
+                "left": sd(border.left),
+                "right": sd(border.right),
+                "top": sd(border.top),
+                "bottom": sd(border.bottom),
+                "diagonal_up": sd(border.diagonal),
+            },
+        )

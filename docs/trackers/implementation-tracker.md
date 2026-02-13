@@ -21,26 +21,26 @@
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 2.1 | Rust: format_ops.rs (read/write font properties) | pending | |
-| 2.2 | Rust: format_ops.rs (read/write fill/background) | pending | |
-| 2.3 | Rust: format_ops.rs (read/write borders) | pending | |
-| 2.4 | Rust: format_ops.rs (read/write alignment) | pending | |
-| 2.5 | Rust: format_ops.rs (read/write number formats) | pending | |
-| 2.6 | Rust: structural_ops.rs (row height, column width) | pending | |
-| 2.7 | Rust: structural_ops.rs (merged cells) | pending | |
-| 2.8 | Rust: structural_ops.rs (freeze panes via sheet views) | pending | |
-| 2.9 | Python: Font class (name, size, bold, italic, underline, strikethrough, color) | pending | |
-| 2.10 | Python: PatternFill class (fill_type, fgColor) | pending | |
-| 2.11 | Python: Border + Side classes (left/right/top/bottom/diagonal, style, color) | pending | |
-| 2.12 | Python: Alignment class (horizontal, vertical, wrap_text, text_rotation) | pending | |
-| 2.13 | Python: cell.font, cell.fill, cell.border, cell.alignment, cell.number_format properties | pending | |
-| 2.14 | Python: ws.row_dimensions[n].height, ws.column_dimensions['A'].width | pending | |
-| 2.15 | Python: ws.merge_cells() / ws.unmerge_cells() | pending | |
-| 2.16 | Python: ws.freeze_panes property | pending | |
-| 2.17 | Tests: formatting roundtrip (all style types) | pending | |
-| 2.18 | Tests: merge cells roundtrip | pending | |
-| 2.19 | Tests: freeze panes roundtrip | pending | |
-| 2.20 | Tests: row height / column width roundtrip | pending | |
+| 2.1 | Rust: format_ops.rs (read/write font properties) | done | Implemented `read_cell_format` / `write_cell_format`. |
+| 2.2 | Rust: format_ops.rs (read/write fill/background) | done | Solid pattern fill + bg color roundtrip. |
+| 2.3 | Rust: format_ops.rs (read/write borders) | done | Implemented `read_cell_border` / `write_cell_border`. |
+| 2.4 | Rust: format_ops.rs (read/write alignment) | done | Horizontal/vertical + wrap + rotation. |
+| 2.5 | Rust: format_ops.rs (read/write number formats) | done | `number_format` format code strings. |
+| 2.6 | Rust: structural_ops.rs (row height, column width) | done | `read_*` + `set_*` APIs on RustWorkbook. |
+| 2.7 | Rust: structural_ops.rs (merged cells) | done | Merge/unmerge + list merged ranges. |
+| 2.8 | Rust: structural_ops.rs (freeze panes via sheet views) | done | SheetView+Pane-based freeze panes support. |
+| 2.9 | Python: Font class (name, size, bold, italic, underline, strikethrough, color) | done | Added in `src/pyumya/styles.py`. |
+| 2.10 | Python: PatternFill class (fill_type, fgColor) | done | Added in `src/pyumya/styles.py`. |
+| 2.11 | Python: Border + Side classes (left/right/top/bottom/diagonal, style, color) | done | Added in `src/pyumya/styles.py`. |
+| 2.12 | Python: Alignment class (horizontal, vertical, wrap_text, text_rotation) | done | Added in `src/pyumya/styles.py`. |
+| 2.13 | Python: cell.font, cell.fill, cell.border, cell.alignment, cell.number_format properties | done | Implemented in `src/pyumya/cell.py`. |
+| 2.14 | Python: ws.row_dimensions[n].height, ws.column_dimensions['A'].width | done | Implemented via lightweight dimension objects in `src/pyumya/worksheet.py`. |
+| 2.15 | Python: ws.merge_cells() / ws.unmerge_cells() | done | Implemented in `src/pyumya/worksheet.py`. |
+| 2.16 | Python: ws.freeze_panes property | done | Implemented in `src/pyumya/worksheet.py`. |
+| 2.17 | Tests: formatting roundtrip (all style types) | done | `tests/test_formatting.py`. |
+| 2.18 | Tests: merge cells roundtrip | done | `tests/test_structural.py`. |
+| 2.19 | Tests: freeze panes roundtrip | done | `tests/test_structural.py`. |
+| 2.20 | Tests: row height / column width roundtrip | done | `tests/test_structural.py`. |
 
 ## Session Log
 (append entries as you complete tasks)
@@ -52,3 +52,7 @@
 ### 2026-02-13
 - Added Python `Cell` + `Worksheet` wrappers, updated `Workbook` to return `Worksheet`.
 - Added roundtrip tests for values, formulas, dates, and worksheet iteration; `pytest` passes.
+
+### 2026-02-13
+- Added Rust formatting + structural APIs (`rust/src/format_ops.rs`, `rust/src/structural_ops.rs`).
+- Added Python style objects + Worksheet structural wrappers; added formatting/structural tests; `pytest` passes.
