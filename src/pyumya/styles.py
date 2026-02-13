@@ -70,6 +70,10 @@ class Border:
     bottom: Side = field(default_factory=Side)
     diagonal: Side = field(default_factory=Side)
 
+    # openpyxl-compatible flags for diagonal direction.
+    diagonalUp: bool = False
+    diagonalDown: bool = False
+
 
 @dataclass
 class Alignment:
@@ -77,3 +81,9 @@ class Alignment:
     vertical: str = "bottom"
     wrap_text: bool = False
     text_rotation: int = 0
+    indent: int = 0
+
+    def __post_init__(self) -> None:
+        # Excel caps indent at 250; Rust layer expects u32.
+        if not (0 <= self.indent <= 250):
+            raise ValueError("Alignment.indent must be between 0 and 250")
