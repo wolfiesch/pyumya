@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterator
 
 from pyumya._rust import RustWorkbook
+from pyumya.worksheet import Worksheet
 
 
 class Workbook:
@@ -30,26 +31,26 @@ class Workbook:
         """Return list of sheet names in workbook order."""
         return self._rust.sheet_names()
 
-    def create_sheet(self, title: str) -> str:
-        """Create a new worksheet and return its name."""
+    def create_sheet(self, title: str) -> Worksheet:
+        """Create a new worksheet and return it."""
         self._rust.add_sheet(title)
-        return title
+        return Worksheet(self, title)
 
     def save(self, filename: str | Path) -> None:
         """Save the workbook to disk."""
         self._rust.save(str(filename))
 
-    def __getitem__(self, name: str) -> str:
-        """Get worksheet by name. Returns name for now (Worksheet class in Phase 1)."""
+    def __getitem__(self, name: str) -> Worksheet:
+        """Get worksheet by name."""
         if name not in self.sheetnames:
             raise KeyError(f"Worksheet '{name}' does not exist.")
-        return name
+        return Worksheet(self, name)
 
     def __contains__(self, name: str) -> bool:
         return name in self.sheetnames
 
-    def __iter__(self) -> Iterator[str]:
-        return iter(self.sheetnames)
+    def __iter__(self) -> Iterator[Worksheet]:
+        return (self[name] for name in self.sheetnames)
 
     def __enter__(self) -> Workbook:
         return self
