@@ -183,6 +183,7 @@ class Cell:
             vertical=str(d.get("v_align", "bottom")),
             wrap_text=bool(d.get("wrap", False)),
             text_rotation=int(d.get("rotation", 0)),
+            indent=int(d.get("indent", 0)),
         )
 
     @alignment.setter
@@ -194,6 +195,7 @@ class Cell:
                 "v_align": str(alignment.vertical),
                 "wrap": bool(alignment.wrap_text),
                 "rotation": int(alignment.text_rotation),
+                "indent": int(alignment.indent),
             },
         )
 
@@ -219,9 +221,12 @@ class Cell:
                 color=normalize_rgb(str(raw.get("color", "000000"))),
             )
 
-        diag = side("diagonal_up")
-        if diag.style == "none":
-            diag = side("diagonal_down")
+        diag_up = side("diagonal_up")
+        diag_down = side("diagonal_down")
+
+        diagonal_up_enabled = diag_up.style != "none"
+        diagonal_down_enabled = diag_down.style != "none"
+        diag = diag_up if diagonal_up_enabled else diag_down
 
         return Border(
             left=side("left"),
@@ -229,12 +234,26 @@ class Cell:
             top=side("top"),
             bottom=side("bottom"),
             diagonal=diag,
+            diagonalUp=diagonal_up_enabled,
+            diagonalDown=diagonal_down_enabled,
         )
 
     @border.setter
     def border(self, border: Border) -> None:
         def sd(s: Side) -> dict[str, str]:
             return {"style": str(s.style), "color": normalize_rgb(str(s.color))}
+
+        diag_side = border.diagonal
+        diag_on = diag_side.style != "none"
+        diag_up = bool(border.diagonalUp) and diag_on
+        diag_down = bool(border.diagonalDown) and diag_on
+
+        diag_up_payload = (
+            sd(diag_side) if diag_up else {"style": "none", "color": sd(diag_side)["color"]}
+        )
+        diag_down_payload = (
+            sd(diag_side) if diag_down else {"style": "none", "color": sd(diag_side)["color"]}
+        )
 
         self._ws._rust_write_cell_border(
             self._coordinate,
@@ -243,6 +262,7 @@ class Cell:
                 "right": sd(border.right),
                 "top": sd(border.top),
                 "bottom": sd(border.bottom),
-                "diagonal_up": sd(border.diagonal),
+                "diagonal_up": diag_up_payload,
+                "diagonal_down": diag_down_payload,
             },
         )

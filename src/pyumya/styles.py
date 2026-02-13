@@ -70,6 +70,10 @@ class Border:
     bottom: Side = field(default_factory=Side)
     diagonal: Side = field(default_factory=Side)
 
+    # openpyxl-compatible flags for diagonal direction.
+    diagonalUp: bool = False
+    diagonalDown: bool = False
+
 
 @dataclass
 class Alignment:
@@ -77,3 +81,8 @@ class Alignment:
     vertical: str = "bottom"
     wrap_text: bool = False
     text_rotation: int = 0
+    indent: int = 0
+
+    def __post_init__(self) -> None:
+        if self.indent < 0:
+            raise ValueError("Alignment.indent must be >= 0")
