@@ -1,6 +1,8 @@
 use pyo3::prelude::*;
 
 mod cell_ops;
+mod format_ops;
+mod structural_ops;
 mod utils;
 mod workbook;
 mod worksheet;

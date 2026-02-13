@@ -73,17 +73,18 @@ pub fn u32_to_col_letter(col: u32) -> String {
 // Color helpers: ARGB <-> hex
 // ---------------------------------------------------------------------------
 
-/// Convert ARGB "FFRRGGBB" or "RRGGBB" to "#RRGGBB".
+/// Convert ARGB "FFRRGGBB" (or "RRGGBB") to "RRGGBB".
 pub fn argb_to_hex(argb: &str) -> String {
-    let s = argb.trim();
+    let raw = argb.trim();
+    let s = raw.strip_prefix('#').unwrap_or(raw);
     if s.len() == 8 {
-        format!("#{}", &s[2..])
+        s[2..].to_ascii_uppercase()
     } else if s.len() == 6 {
-        format!("#{s}")
-    } else if s.starts_with('#') {
-        s.to_string()
+        s.to_ascii_uppercase()
+    } else if s.len() > 6 {
+        s[s.len() - 6..].to_ascii_uppercase()
     } else {
-        format!("#{s}")
+        s.to_ascii_uppercase()
     }
 }
 
@@ -92,9 +93,9 @@ pub fn hex_to_argb(hex: &str) -> String {
     let s = hex.strip_prefix('#').unwrap_or(hex).trim();
     if s.len() == 8 {
         // Already ARGB.
-        s.to_string()
+        s.to_ascii_uppercase()
     } else {
-        format!("FF{s}")
+        format!("FF{}", s.to_ascii_uppercase())
     }
 }
 

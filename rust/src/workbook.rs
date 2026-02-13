@@ -5,7 +5,7 @@ use std::path::Path;
 
 use umya_spreadsheet::{new_file, reader, writer, Spreadsheet};
 
-use crate::{cell_ops, worksheet};
+use crate::{cell_ops, format_ops, structural_ops, worksheet};
 
 /// Low-level Rust workbook handle wrapping umya-spreadsheet.
 ///
@@ -82,6 +82,76 @@ impl RustWorkbook {
 
     pub fn sheet_max_column(&self, sheet: &str) -> PyResult<u32> {
         worksheet::sheet_max_column(&self.book, sheet)
+    }
+
+    // =========================================================================
+    // Phase 2: Formatting
+    // =========================================================================
+
+    pub fn read_cell_format(&self, py: Python<'_>, sheet: &str, a1: &str) -> PyResult<Py<PyAny>> {
+        format_ops::read_cell_format(&self.book, py, sheet, a1)
+    }
+
+    pub fn write_cell_format(
+        &mut self,
+        sheet: &str,
+        a1: &str,
+        format_dict: &Bound<'_, PyAny>,
+    ) -> PyResult<()> {
+        format_ops::write_cell_format(&mut self.book, sheet, a1, format_dict)
+    }
+
+    pub fn read_cell_border(&self, py: Python<'_>, sheet: &str, a1: &str) -> PyResult<Py<PyAny>> {
+        format_ops::read_cell_border(&self.book, py, sheet, a1)
+    }
+
+    pub fn write_cell_border(
+        &mut self,
+        sheet: &str,
+        a1: &str,
+        border_dict: &Bound<'_, PyAny>,
+    ) -> PyResult<()> {
+        format_ops::write_cell_border(&mut self.book, sheet, a1, border_dict)
+    }
+
+    // =========================================================================
+    // Phase 2: Structural
+    // =========================================================================
+
+    pub fn read_row_height(&self, sheet: &str, row: u32) -> PyResult<Option<f64>> {
+        structural_ops::read_row_height(&self.book, sheet, row)
+    }
+
+    pub fn set_row_height(&mut self, sheet: &str, row: u32, height: f64) -> PyResult<()> {
+        structural_ops::set_row_height(&mut self.book, sheet, row, height)
+    }
+
+    pub fn read_column_width(&self, sheet: &str, col_str: &str) -> PyResult<Option<f64>> {
+        structural_ops::read_column_width(&self.book, sheet, col_str)
+    }
+
+    pub fn set_column_width(&mut self, sheet: &str, col_str: &str, width: f64) -> PyResult<()> {
+        structural_ops::set_column_width(&mut self.book, sheet, col_str, width)
+    }
+
+    pub fn merge_cells(&mut self, sheet: &str, range_str: &str) -> PyResult<()> {
+        structural_ops::merge_cells(&mut self.book, sheet, range_str)
+    }
+
+    pub fn unmerge_cells(&mut self, sheet: &str, range_str: &str) -> PyResult<()> {
+        structural_ops::unmerge_cells(&mut self.book, sheet, range_str)
+    }
+
+    pub fn get_merged_ranges(&self, sheet: &str) -> PyResult<Vec<String>> {
+        structural_ops::get_merged_ranges(&self.book, sheet)
+    }
+
+    pub fn get_freeze_panes(&self, sheet: &str) -> PyResult<Option<String>> {
+        structural_ops::get_freeze_panes(&self.book, sheet)
+    }
+
+    pub fn set_freeze_panes(&mut self, sheet: &str, a1: Option<&str>) -> PyResult<()> {
+        structural_ops::set_freeze_panes(&mut self.book, sheet, a1)
     }
 
     pub fn save(&self, path: &str) -> PyResult<()> {

@@ -111,7 +111,7 @@ pub(crate) fn write_cell_value(
         .ok_or_else(|| PyErr::new::<PyValueError, _>(format!("Unknown sheet: {sheet}")))?;
 
     let dict = payload
-        .downcast::<PyDict>()
+        .cast::<PyDict>()
         .map_err(|_| PyErr::new::<PyValueError, _>("payload must be a dict"))?;
     let type_obj = dict
         .get_item("type")?
