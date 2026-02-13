@@ -245,15 +245,21 @@ class Cell:
 
         diag_side = border.diagonal
         diag_on = diag_side.style != "none"
-        diag_up = bool(border.diagonalUp) and diag_on
-        diag_down = bool(border.diagonalDown) and diag_on
 
-        diag_up_payload = (
-            sd(diag_side) if diag_up else {"style": "none", "color": sd(diag_side)["color"]}
-        )
-        diag_down_payload = (
-            sd(diag_side) if diag_down else {"style": "none", "color": sd(diag_side)["color"]}
-        )
+        # If a diagonal style is set but neither direction flag is enabled,
+        # default to diagonalUp so the border is not silently dropped.
+        diag_up_flag = bool(border.diagonalUp)
+        diag_down_flag = bool(border.diagonalDown)
+        if diag_on and not (diag_up_flag or diag_down_flag):
+            diag_up_flag = True
+
+        diag_up = diag_up_flag and diag_on
+        diag_down = diag_down_flag and diag_on
+
+        diag_side_dict = sd(diag_side)
+        none_payload = {"style": "none", "color": diag_side_dict["color"]}
+        diag_up_payload = diag_side_dict if diag_up else none_payload
+        diag_down_payload = diag_side_dict if diag_down else none_payload
 
         self._ws._rust_write_cell_border(
             self._coordinate,

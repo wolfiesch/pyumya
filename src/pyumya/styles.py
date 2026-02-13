@@ -84,5 +84,6 @@ class Alignment:
     indent: int = 0
 
     def __post_init__(self) -> None:
-        if self.indent < 0:
-            raise ValueError("Alignment.indent must be >= 0")
+        # Excel caps indent at 250; Rust layer expects u32.
+        if not (0 <= self.indent <= 250):
+            raise ValueError("Alignment.indent must be between 0 and 250")

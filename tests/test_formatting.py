@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import pyumya
 
 
@@ -42,3 +44,65 @@ def test_formatting_roundtrip(tmp_path: Path) -> None:
     assert ws2["A1"].alignment.horizontal == "center"
     assert ws2["A1"].alignment.indent == 2
     assert ws2["A2"].number_format == "0.00"
+
+
+def test_diagonal_down_roundtrip(tmp_path: Path) -> None:
+    """Diagonal border with only diagonalDown enabled."""
+    out = tmp_path / "diag_down.xlsx"
+
+    wb = pyumya.Workbook()
+    ws = wb["Sheet1"]
+    ws["A1"].border = pyumya.Border(
+        diagonal=pyumya.Side(style="thin"),
+        diagonalDown=True,
+    )
+    wb.save(out)
+
+    wb2 = pyumya.load_workbook(out)
+    ws2 = wb2["Sheet1"]
+    assert ws2["A1"].border.diagonal.style == "thin"
+    assert ws2["A1"].border.diagonalUp is False
+    assert ws2["A1"].border.diagonalDown is True
+
+
+def test_diagonal_both_directions_roundtrip(tmp_path: Path) -> None:
+    """Diagonal border with both directions enabled."""
+    out = tmp_path / "diag_both.xlsx"
+
+    wb = pyumya.Workbook()
+    ws = wb["Sheet1"]
+    ws["A1"].border = pyumya.Border(
+        diagonal=pyumya.Side(style="medium"),
+        diagonalUp=True,
+        diagonalDown=True,
+    )
+    wb.save(out)
+
+    wb2 = pyumya.load_workbook(out)
+    ws2 = wb2["Sheet1"]
+    assert ws2["A1"].border.diagonal.style == "medium"
+    assert ws2["A1"].border.diagonalUp is True
+    assert ws2["A1"].border.diagonalDown is True
+
+
+def test_diagonal_implicit_direction(tmp_path: Path) -> None:
+    """Diagonal with style but no explicit direction defaults to diagonalUp."""
+    out = tmp_path / "diag_implicit.xlsx"
+
+    wb = pyumya.Workbook()
+    ws = wb["Sheet1"]
+    ws["A1"].border = pyumya.Border(
+        diagonal=pyumya.Side(style="thin"),
+    )
+    wb.save(out)
+
+    wb2 = pyumya.load_workbook(out)
+    ws2 = wb2["Sheet1"]
+    assert ws2["A1"].border.diagonal.style == "thin"
+    assert ws2["A1"].border.diagonalUp is True
+
+
+def test_negative_indent_raises() -> None:
+    """Alignment.indent must be >= 0."""
+    with pytest.raises(ValueError, match="indent"):
+        pyumya.Alignment(indent=-1)

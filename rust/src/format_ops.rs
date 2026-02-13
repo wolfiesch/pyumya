@@ -372,9 +372,10 @@ pub(crate) fn write_cell_border(
     fn is_enabled(sub: &Bound<'_, PyDict>) -> PyResult<bool> {
         if let Some(s) = sub.get_item("style")? {
             let style = s.extract::<String>()?;
-            return Ok(!style.is_empty() && style != "none");
+            Ok(!style.is_empty() && style != "none")
+        } else {
+            Ok(false)
         }
-        Ok(false)
     }
 
     if let Some(sub) = dict.get_item("top")? {
@@ -408,31 +409,21 @@ pub(crate) fn write_cell_border(
     let mut diag_style: Option<String> = None;
     let mut diag_color: Option<String> = None;
 
-    if let Some(sub) = dict.get_item("diagonal_up")? {
-        if let Ok(d) = sub.cast::<PyDict>() {
-            saw_diag = true;
-            diag_up_enabled = is_enabled(&d)?;
-            if diag_up_enabled && diag_style.is_none() {
-                if let Some(s) = d.get_item("style")? {
-                    diag_style = Some(s.extract::<String>()?);
-                }
-                if let Some(c) = d.get_item("color")? {
-                    diag_color = Some(c.extract::<String>()?);
-                }
-            }
-        }
-    }
-
-    if let Some(sub) = dict.get_item("diagonal_down")? {
-        if let Ok(d) = sub.cast::<PyDict>() {
-            saw_diag = true;
-            diag_down_enabled = is_enabled(&d)?;
-            if diag_down_enabled && diag_style.is_none() {
-                if let Some(s) = d.get_item("style")? {
-                    diag_style = Some(s.extract::<String>()?);
-                }
-                if let Some(c) = d.get_item("color")? {
-                    diag_color = Some(c.extract::<String>()?);
+    for (key, enabled_flag) in [
+        ("diagonal_up", &mut diag_up_enabled),
+        ("diagonal_down", &mut diag_down_enabled),
+    ] {
+        if let Some(sub) = dict.get_item(key)? {
+            if let Ok(d) = sub.cast::<PyDict>() {
+                saw_diag = true;
+                *enabled_flag = is_enabled(&d)?;
+                if *enabled_flag && diag_style.is_none() {
+                    if let Some(s) = d.get_item("style")? {
+                        diag_style = Some(s.extract::<String>()?);
+                    }
+                    if let Some(c) = d.get_item("color")? {
+                        diag_color = Some(c.extract::<String>()?);
+                    }
                 }
             }
         }
