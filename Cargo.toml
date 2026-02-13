@@ -1,0 +1,15 @@
+[package]
+name = "pyumya"
+version = "0.1.0"
+edition = "2021"
+description = "Rust backend for pyumya — fast Excel R/W with formatting"
+
+[lib]
+name = "_rust"
+path = "rust/src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.28", features = ["extension-module"] }
+umya-spreadsheet = "2.3"
+chrono = "0.4"
