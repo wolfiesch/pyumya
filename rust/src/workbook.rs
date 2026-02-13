@@ -19,9 +19,18 @@ pub struct RustWorkbook {
 #[pymethods]
 impl RustWorkbook {
     #[new]
-    pub fn new() -> Self {
+    #[pyo3(signature = (remove_default_sheet = false))]
+    pub fn new(remove_default_sheet: bool) -> Self {
         let mut book = new_file();
-        let _ = book.remove_sheet_by_name("Sheet1");
+
+        if remove_default_sheet {
+            // umya-spreadsheet's new_file() includes a default worksheet.
+            // Remove it if requested so callers can start from an empty workbook.
+            let _ = book.remove_sheet_by_name("Sheet1");
+            if !book.get_sheet_collection().is_empty() {
+                let _ = book.remove_sheet(0);
+            }
+        }
         Self { book }
     }
 

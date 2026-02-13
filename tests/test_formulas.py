@@ -11,7 +11,7 @@ def test_formula_roundtrip(tmp_path: Path) -> None:
     out = tmp_path / "formulas.xlsx"
 
     wb = pyumya.Workbook()
-    ws = wb.create_sheet("Sheet1")
+    ws = wb["Sheet1"]
 
     ws["A1"].value = 1
     ws["A2"].value = 2

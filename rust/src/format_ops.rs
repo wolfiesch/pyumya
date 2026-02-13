@@ -209,8 +209,27 @@ pub(crate) fn write_cell_format(
     }
     if let Some(rot) = dict.get_item("rotation")? {
         let rot = rot.extract::<i64>()?;
-        if let Ok(r) = u32::try_from(rot) {
+        // Excel stores rotation as an unsigned integer:
+        // - 0..=90 are literal degrees
+        // - 91..=180 represent -1..=-90 degrees (encoded)
+        // - 255 is vertical text
+        // Accept either the raw encoding (0..=180, 255) or human-friendly
+        // negative degrees (-90..=-1) and normalize.
+        let encoded: Option<u32> = if rot == 255 {
+            Some(255)
+        } else if (0..=180).contains(&rot) {
+            Some(rot as u32)
+        } else if (-90..=-1).contains(&rot) {
+            Some((90 - rot) as u32)
+        } else {
+            None
+        };
+        if let Some(r) = encoded {
             style.get_alignment_mut().set_text_rotation(r);
+        } else {
+            return Err(PyErr::new::<PyValueError, _>(format!(
+                "Invalid rotation: {rot}"
+            )));
         }
     }
 

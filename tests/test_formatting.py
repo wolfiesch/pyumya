@@ -11,7 +11,7 @@ def test_formatting_roundtrip(tmp_path: Path) -> None:
     out = tmp_path / "formatting.xlsx"
 
     wb = pyumya.Workbook()
-    ws = wb.create_sheet("Sheet1")
+    ws = wb["Sheet1"]
 
     ws["A1"].value = "Hello"
     ws["A2"].value = 123.456

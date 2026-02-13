@@ -14,7 +14,7 @@ def test_cell_value_roundtrip_all_types(tmp_path: Path) -> None:
     out = tmp_path / "values.xlsx"
 
     wb = pyumya.Workbook()
-    ws = wb.create_sheet("Sheet1")
+    ws = wb["Sheet1"]
 
     ws["A1"].value = "Hello"
     ws["A2"].value = 42

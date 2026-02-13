@@ -11,7 +11,7 @@ def test_merge_cells_roundtrip(tmp_path: Path) -> None:
     out = tmp_path / "merge.xlsx"
 
     wb = pyumya.Workbook()
-    ws = wb.create_sheet("Sheet1")
+    ws = wb["Sheet1"]
 
     ws.merge_cells("B1:D1")
     wb.save(out)
@@ -25,7 +25,7 @@ def test_freeze_panes_roundtrip(tmp_path: Path) -> None:
     out = tmp_path / "freeze.xlsx"
 
     wb = pyumya.Workbook()
-    ws = wb.create_sheet("Sheet1")
+    ws = wb["Sheet1"]
     ws.freeze_panes = "A2"
     wb.save(out)
 
@@ -38,7 +38,7 @@ def test_row_height_and_column_width_roundtrip(tmp_path: Path) -> None:
     out = tmp_path / "dims.xlsx"
 
     wb = pyumya.Workbook()
-    ws = wb.create_sheet("Sheet1")
+    ws = wb["Sheet1"]
 
     ws.row_dimensions[1].height = 20
     ws.column_dimensions["A"].width = 15

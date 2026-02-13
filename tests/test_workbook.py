@@ -8,19 +8,24 @@ import pyumya
 
 def test_create_empty_workbook():
     wb = pyumya.Workbook()
+    assert wb.sheetnames == ["Sheet1"]
+
+
+def test_create_workbook_without_default_sheet():
+    wb = pyumya.Workbook(remove_default_sheet=True)
     assert wb.sheetnames == []
 
 
 def test_create_sheet():
     wb = pyumya.Workbook()
     wb.create_sheet("Data")
-    assert wb.sheetnames == ["Data"]
+    assert wb.sheetnames == ["Sheet1", "Data"]
     assert "Data" in wb
 
 
 def test_roundtrip_save_load(tmp_path: Path):
     # Write
-    wb = pyumya.Workbook()
+    wb = pyumya.Workbook(remove_default_sheet=True)
     wb.create_sheet("Sheet1")
     wb.create_sheet("Sheet2")
     out = tmp_path / "test.xlsx"

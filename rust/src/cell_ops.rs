@@ -3,6 +3,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
+use umya_spreadsheet::structs::CellRawValue;
 use umya_spreadsheet::{NumberingFormat, Spreadsheet};
 
 use crate::utils::{
@@ -73,6 +74,21 @@ pub(crate) fn read_cell_value(
         return cell_with_value(py, "number", f);
     }
 
+    // Typed non-numeric access.
+    match cell.get_raw_value() {
+        CellRawValue::Empty => {
+            return cell_blank(py);
+        }
+        CellRawValue::Bool(b) => {
+            return cell_with_value(py, "boolean", *b);
+        }
+        CellRawValue::Error(_) => {
+            let raw = cell.get_value().into_owned();
+            return cell_with_value(py, "error", raw);
+        }
+        _ => {}
+    }
+
     // Fallback typing: error/bool/string.
     let raw = cell
         .get_value()
@@ -83,14 +99,6 @@ pub(crate) fn read_cell_value(
     // Errors
     if raw == "#N/A" || (raw.starts_with('#') && raw.ends_with('!')) {
         return cell_with_value(py, "error", raw);
-    }
-
-    // Boolean
-    if raw.eq_ignore_ascii_case("true") {
-        return cell_with_value(py, "boolean", true);
-    }
-    if raw.eq_ignore_ascii_case("false") {
-        return cell_with_value(py, "boolean", false);
     }
 
     if raw.is_empty() {
@@ -120,7 +128,8 @@ pub(crate) fn write_cell_value(
 
     match type_str.as_str() {
         "blank" => {
-            // Intentionally a no-op (the cell may not exist yet).
+            // Clear value and any existing formula, but preserve style.
+            ws.get_cell_mut(a1).set_blank();
             Ok(())
         }
         "string" => {

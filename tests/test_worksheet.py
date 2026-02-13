@@ -7,7 +7,7 @@ import pyumya
 
 def test_worksheet_cell_access() -> None:
     wb = pyumya.Workbook()
-    ws = wb.create_sheet("Sheet1")
+    ws = wb["Sheet1"]
 
     c = ws["A1"]
     assert c.coordinate == "A1"
@@ -22,7 +22,7 @@ def test_worksheet_cell_access() -> None:
 
 def test_iter_rows_cols_and_append() -> None:
     wb = pyumya.Workbook()
-    ws = wb.create_sheet("Sheet1")
+    ws = wb["Sheet1"]
 
     assert list(ws.iter_rows()) == []
     assert list(ws.iter_cols()) == []

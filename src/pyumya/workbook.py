@@ -23,8 +23,16 @@ class Workbook:
         ws = wb["Sheet1"]
     """
 
-    def __init__(self, *, _rust_book: RustWorkbook | None = None) -> None:
-        self._rust = _rust_book or RustWorkbook()
+    def __init__(
+        self,
+        *,
+        _rust_book: RustWorkbook | None = None,
+        remove_default_sheet: bool = False,
+    ) -> None:
+        if _rust_book is not None:
+            self._rust = _rust_book
+        else:
+            self._rust = RustWorkbook(remove_default_sheet=remove_default_sheet)
 
     @property
     def sheetnames(self) -> list[str]:
