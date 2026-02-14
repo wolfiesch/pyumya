@@ -21,24 +21,20 @@ fn normalize_operator(input: &str) -> String {
     let s = input.trim();
     // Keep the exact spellings used by umya-spreadsheet's enums.
     if s.eq_ignore_ascii_case("greater_than") {
-        return "greaterThan".to_string();
+        "greaterThan".to_string()
+    } else if s.eq_ignore_ascii_case("greater_than_or_equal") {
+        "greaterThanOrEqual".to_string()
+    } else if s.eq_ignore_ascii_case("less_than") {
+        "lessThan".to_string()
+    } else if s.eq_ignore_ascii_case("less_than_or_equal") {
+        "lessThanOrEqual".to_string()
+    } else if s.eq_ignore_ascii_case("not_between") {
+        "notBetween".to_string()
+    } else if s.eq_ignore_ascii_case("not_equal") {
+        "notEqual".to_string()
+    } else {
+        s.to_string()
     }
-    if s.eq_ignore_ascii_case("greater_than_or_equal") {
-        return "greaterThanOrEqual".to_string();
-    }
-    if s.eq_ignore_ascii_case("less_than") {
-        return "lessThan".to_string();
-    }
-    if s.eq_ignore_ascii_case("less_than_or_equal") {
-        return "lessThanOrEqual".to_string();
-    }
-    if s.eq_ignore_ascii_case("not_between") {
-        return "notBetween".to_string();
-    }
-    if s.eq_ignore_ascii_case("not_equal") {
-        return "notEqual".to_string();
-    }
-    s.to_string()
 }
 
 pub(crate) fn read_data_validations(

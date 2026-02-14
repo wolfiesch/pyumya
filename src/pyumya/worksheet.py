@@ -140,6 +140,8 @@ class Worksheet:
         return dict(raw) if isinstance(raw, dict) else {}
 
     def set_pane_settings(self, settings: dict[str, Any]) -> None:
+        """Apply pane settings. Accepts either a flat dict or ``{"freeze": {...}}``
+        wrapper (for ExcelBench compatibility)."""
         payload: dict[str, Any] = dict(settings)
         inner = payload.get("freeze")
         if isinstance(inner, dict):
@@ -197,6 +199,8 @@ class Worksheet:
         return []
 
     def add_data_validation(self, validation: dict[str, Any]) -> None:
+        """Add a data validation rule. Accepts either a flat dict or
+        ``{"validation": {...}}`` wrapper (for ExcelBench compatibility)."""
         payload: dict[str, Any] = dict(validation)
         inner = payload.get("validation")
         if isinstance(inner, dict):
@@ -211,6 +215,8 @@ class Worksheet:
         return []
 
     def add_conditional_format(self, rule: dict[str, Any]) -> None:
+        """Add a conditional formatting rule. Accepts either a flat dict or
+        ``{"cf_rule": {...}}`` wrapper (for ExcelBench compatibility)."""
         payload: dict[str, Any] = dict(rule)
         inner = payload.get("cf_rule")
         if isinstance(inner, dict):

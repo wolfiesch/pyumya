@@ -14,16 +14,18 @@ fn extract_comment_text(comment: &Comment) -> String {
 
     // Fallback: CommentText may store a plain `Text` node which umya-spreadsheet
     // does not expose as a public string API. Parse the Debug representation.
+    // NOTE: This is fragile and may break if the Debug format changes.
+    // TODO: Contribute a public API to umya-spreadsheet to get plain text directly.
+    // TODO: Handle escaped quotes in the string value (e.g. `He said \"hi\"`).
     let dbg = format!("{:?}", ct);
     let needle = "value: \"";
-    let Some(start) = dbg.find(needle) else {
+    let Some((_, after_needle)) = dbg.split_once(needle) else {
         return String::new();
     };
-    let rest = &dbg[start + needle.len()..];
-    let Some(end) = rest.find('"') else {
+    let Some((value, _)) = after_needle.split_once('"') else {
         return String::new();
     };
-    rest[..end].to_string()
+    value.to_string()
 }
 
 pub(crate) fn read_comments(

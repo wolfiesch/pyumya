@@ -67,11 +67,9 @@ fn default_data_bar() -> DataBar {
     let mut bar = DataBar::default();
 
     let mut min = ConditionalFormatValueObject::default();
-    min.set_type(ConditionalFormatValueObjectValues::Number)
-        .set_val("0");
+    min.set_type(ConditionalFormatValueObjectValues::Min);
     let mut max = ConditionalFormatValueObject::default();
-    max.set_type(ConditionalFormatValueObjectValues::Number)
-        .set_val("10");
+    max.set_type(ConditionalFormatValueObjectValues::Max);
     bar.add_cfvo_collection(min);
     bar.add_cfvo_collection(max);
 

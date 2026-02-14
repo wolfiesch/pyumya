@@ -6,6 +6,9 @@ use umya_spreadsheet::structs::drawing::spreadsheet::MarkerType;
 use umya_spreadsheet::structs::Image;
 use umya_spreadsheet::Spreadsheet;
 
+// EMUs (English Metric Units) per CSS pixel, assuming the 96 DPI model used by
+// Office Open XML: 914_400 EMU/inch / 96 px/inch = 9_525 EMU/px.
+// This does not account for high-DPI scaling; it follows OOXML's 96 DPI assumption.
 const EMU_PER_PX: i32 = 9525;
 
 pub(crate) fn read_images(book: &Spreadsheet, py: Python<'_>, sheet: &str) -> PyResult<Py<PyAny>> {
@@ -63,11 +66,20 @@ pub(crate) fn add_image(
     let mut marker = MarkerType::default();
     marker.set_coordinate(cell);
     if let Some((x, y)) = offset {
-        marker.set_col_off(x * EMU_PER_PX);
-        marker.set_row_off(y * EMU_PER_PX);
+        let col_off = x
+            .checked_mul(EMU_PER_PX)
+            .ok_or_else(|| PyErr::new::<PyValueError, _>("Image column offset too large (overflow)"))?;
+        let row_off = y
+            .checked_mul(EMU_PER_PX)
+            .ok_or_else(|| PyErr::new::<PyValueError, _>("Image row offset too large (overflow)"))?;
+        marker.set_col_off(col_off);
+        marker.set_row_off(row_off);
     }
 
     let mut img = Image::default();
+    if !std::path::Path::new(path).exists() {
+        return Err(PyErr::new::<PyValueError, _>(format!("Image file not found: {path}")));
+    }
     img.new_image(path, marker);
     ws.add_image(img);
     Ok(())
