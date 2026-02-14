@@ -115,6 +115,11 @@ pub(crate) fn read_cell_format(
         if rot != 0 {
             d.set_item("rotation", rot)?;
         }
+
+        let indent = *align.get_indent();
+        if indent != 0 {
+            d.set_item("indent", indent)?;
+        }
     }
 
     Ok(d.into_any().unbind())
@@ -233,6 +238,17 @@ pub(crate) fn write_cell_format(
         }
     }
 
+    if let Some(indent) = dict.get_item("indent")? {
+        let indent = indent.extract::<i64>()?;
+        if indent < 0 {
+            return Err(PyErr::new::<PyValueError, _>("indent must be >= 0"));
+        }
+        style.get_alignment_mut().set_indent(
+            u32::try_from(indent)
+                .map_err(|_| PyErr::new::<PyValueError, _>("indent out of range"))?,
+        );
+    }
+
     Ok(())
 }
 
@@ -301,8 +317,21 @@ pub(crate) fn read_cell_border(
             let edge = PyDict::new(py);
             edge.set_item("style", s)?;
             edge.set_item("color", c)?;
-            // umya doesn't distinguish up/down diagonal - use diagonal_up.
-            d.set_item("diagonal_up", edge)?;
+
+            let up = *borders.get_diagonal_up();
+            let down = *borders.get_diagonal_down();
+
+            if up {
+                d.set_item("diagonal_up", &edge)?;
+            }
+            if down {
+                d.set_item("diagonal_down", &edge)?;
+            }
+
+            // Fallback for files that set a diagonal border style but omit flags.
+            if !up && !down {
+                d.set_item("diagonal_up", &edge)?;
+            }
         }
     }
 
@@ -340,6 +369,15 @@ pub(crate) fn write_cell_border(
         Ok(())
     }
 
+    fn is_enabled(sub: &Bound<'_, PyDict>) -> PyResult<bool> {
+        if let Some(s) = sub.get_item("style")? {
+            let style = s.extract::<String>()?;
+            Ok(!style.is_empty() && style != "none")
+        } else {
+            Ok(false)
+        }
+    }
+
     if let Some(sub) = dict.get_item("top")? {
         if let Ok(d) = sub.cast::<PyDict>() {
             apply_edge(borders.get_top_mut(), &d)?;
@@ -360,15 +398,49 @@ pub(crate) fn write_cell_border(
             apply_edge(borders.get_right_mut(), &d)?;
         }
     }
-    if let Some(sub) = dict.get_item("diagonal_up")? {
-        if let Ok(d) = sub.cast::<PyDict>() {
-            apply_edge(borders.get_diagonal_mut(), &d)?;
+
+    // Diagonal borders share a single style ("diagonal") plus two direction flags
+    // (diagonalUp/diagonalDown). Choose the first enabled direction as the style
+    // source so we don't overwrite a real diagonal style with a "none" from the
+    // other direction.
+    let mut saw_diag = false;
+    let mut diag_up_enabled = false;
+    let mut diag_down_enabled = false;
+    let mut diag_style: Option<String> = None;
+    let mut diag_color: Option<String> = None;
+
+    for (key, enabled_flag) in [
+        ("diagonal_up", &mut diag_up_enabled),
+        ("diagonal_down", &mut diag_down_enabled),
+    ] {
+        if let Some(sub) = dict.get_item(key)? {
+            if let Ok(d) = sub.cast::<PyDict>() {
+                saw_diag = true;
+                *enabled_flag = is_enabled(&d)?;
+                if *enabled_flag && diag_style.is_none() {
+                    if let Some(s) = d.get_item("style")? {
+                        diag_style = Some(s.extract::<String>()?);
+                    }
+                    if let Some(c) = d.get_item("color")? {
+                        diag_color = Some(c.extract::<String>()?);
+                    }
+                }
+            }
         }
     }
-    if let Some(sub) = dict.get_item("diagonal_down")? {
-        if let Ok(d) = sub.cast::<PyDict>() {
-            apply_edge(borders.get_diagonal_mut(), &d)?;
+
+    if saw_diag {
+        let diag = borders.get_diagonal_mut();
+        if let Some(style_str) = diag_style {
+            diag.set_border_style(style_str);
+            if let Some(color_str) = diag_color {
+                diag.get_color_mut().set_argb(hex_to_argb(&color_str));
+            }
+        } else {
+            diag.set_border_style("none".to_string());
         }
+        borders.set_diagonal_up(diag_up_enabled);
+        borders.set_diagonal_down(diag_down_enabled);
     }
 
     Ok(())
