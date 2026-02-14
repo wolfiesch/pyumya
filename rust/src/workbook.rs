@@ -5,7 +5,10 @@ use std::path::Path;
 
 use umya_spreadsheet::{new_file, reader, writer, Spreadsheet};
 
-use crate::{cell_ops, format_ops, structural_ops, worksheet};
+use crate::{
+    cell_ops, comment_ops, conditional_format_ops, data_validation_ops, format_ops, hyperlink_ops,
+    image_ops, structural_ops, worksheet,
+};
 
 /// Low-level Rust workbook handle wrapping umya-spreadsheet.
 ///
@@ -161,6 +164,105 @@ impl RustWorkbook {
 
     pub fn set_freeze_panes(&mut self, sheet: &str, a1: Option<&str>) -> PyResult<()> {
         structural_ops::set_freeze_panes(&mut self.book, sheet, a1)
+    }
+
+    pub fn read_freeze_panes_settings(&self, py: Python<'_>, sheet: &str) -> PyResult<Py<PyAny>> {
+        structural_ops::read_freeze_panes_settings(&self.book, py, sheet)
+    }
+
+    pub fn set_freeze_panes_settings(
+        &mut self,
+        sheet: &str,
+        settings: &Bound<'_, PyAny>,
+    ) -> PyResult<()> {
+        structural_ops::set_freeze_panes_settings(&mut self.book, sheet, settings)
+    }
+
+    // =========================================================================
+    // Tier 2: Hyperlinks
+    // =========================================================================
+
+    pub fn read_hyperlinks(&self, py: Python<'_>, sheet: &str) -> PyResult<Py<PyAny>> {
+        hyperlink_ops::read_hyperlinks(&self.book, py, sheet)
+    }
+
+    pub fn add_hyperlink(
+        &mut self,
+        sheet: &str,
+        a1: &str,
+        target: &str,
+        tooltip: Option<&str>,
+        internal: bool,
+    ) -> PyResult<()> {
+        hyperlink_ops::add_hyperlink(&mut self.book, sheet, a1, target, tooltip, internal)
+    }
+
+    // =========================================================================
+    // Tier 2: Comments
+    // =========================================================================
+
+    pub fn read_comments(&self, py: Python<'_>, sheet: &str) -> PyResult<Py<PyAny>> {
+        comment_ops::read_comments(&self.book, py, sheet)
+    }
+
+    pub fn add_comment(
+        &mut self,
+        sheet: &str,
+        a1: &str,
+        text: &str,
+        author: Option<&str>,
+    ) -> PyResult<()> {
+        comment_ops::add_comment(&mut self.book, sheet, a1, text, author)
+    }
+
+    // =========================================================================
+    // Tier 2: Data Validation
+    // =========================================================================
+
+    pub fn read_data_validations(&self, py: Python<'_>, sheet: &str) -> PyResult<Py<PyAny>> {
+        data_validation_ops::read_data_validations(&self.book, py, sheet)
+    }
+
+    pub fn add_data_validation(
+        &mut self,
+        sheet: &str,
+        validation_dict: &Bound<'_, PyAny>,
+    ) -> PyResult<()> {
+        data_validation_ops::add_data_validation(&mut self.book, sheet, validation_dict)
+    }
+
+    // =========================================================================
+    // Tier 2: Conditional Formatting
+    // =========================================================================
+
+    pub fn read_conditional_formats(&self, py: Python<'_>, sheet: &str) -> PyResult<Py<PyAny>> {
+        conditional_format_ops::read_conditional_formats(&self.book, py, sheet)
+    }
+
+    pub fn add_conditional_format(
+        &mut self,
+        sheet: &str,
+        rule_dict: &Bound<'_, PyAny>,
+    ) -> PyResult<()> {
+        conditional_format_ops::add_conditional_format(&mut self.book, sheet, rule_dict)
+    }
+
+    // =========================================================================
+    // Tier 2: Images
+    // =========================================================================
+
+    pub fn read_images(&self, py: Python<'_>, sheet: &str) -> PyResult<Py<PyAny>> {
+        image_ops::read_images(&self.book, py, sheet)
+    }
+
+    pub fn add_image(
+        &mut self,
+        sheet: &str,
+        cell: &str,
+        path: &str,
+        offset: Option<(i32, i32)>,
+    ) -> PyResult<()> {
+        image_ops::add_image(&mut self.book, sheet, cell, path, offset)
     }
 
     pub fn save(&self, path: &str) -> PyResult<()> {

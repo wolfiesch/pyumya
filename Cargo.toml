@@ -11,6 +11,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.28", features = ["extension-module"] }
-# TODO: Switch back to a released version once indent support is available upstream.
-umya-spreadsheet = { git = "https://github.com/wolfiesch/umya-spreadsheet.git", rev = "0ac65aa721a1f97fb1bd58c6822f42548b7af20e" }
+# Pinned to wolfiesch fork (2.3.3-compat + indent + hyperlink XML-unescape patches).
+# TODO: Switch back to a released crate version once patches are merged upstream.
+# See: https://github.com/MathNya/umya-spreadsheet/pull/308
+umya-spreadsheet = { git = "https://github.com/wolfiesch/umya-spreadsheet", rev = "3e88efbe3f046759fa22f22e0a2e5dfa05ec77dc" }
 chrono = "0.4"

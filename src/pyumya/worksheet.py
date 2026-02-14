@@ -135,12 +135,115 @@ class Worksheet:
         self._workbook._rust.set_freeze_panes(self._title, a1)
 
     @property
+    def pane_settings(self) -> dict[str, Any]:
+        raw = self._workbook._rust.read_freeze_panes_settings(self._title)
+        return dict(raw) if isinstance(raw, dict) else {}
+
+    def set_pane_settings(self, settings: dict[str, Any]) -> None:
+        """Apply pane settings. Accepts either a flat dict or ``{"freeze": {...}}``
+        wrapper (for ExcelBench compatibility)."""
+        payload: dict[str, Any] = dict(settings)
+        inner = payload.get("freeze")
+        if isinstance(inner, dict):
+            payload = dict(inner)
+        self._workbook._rust.set_freeze_panes_settings(self._title, payload)
+
+    @property
     def row_dimensions(self) -> RowDimensions:
         return RowDimensions(self)
 
     @property
     def column_dimensions(self) -> ColumnDimensions:
         return ColumnDimensions(self)
+
+    # ---------------------------------------------------------------------
+    # Tier 2 features
+    # ---------------------------------------------------------------------
+
+    @property
+    def hyperlinks(self) -> list[dict[str, Any]]:
+        raw = self._workbook._rust.read_hyperlinks(self._title)
+        if isinstance(raw, list):
+            return [dict(x) for x in raw if isinstance(x, dict)]
+        return []
+
+    def add_hyperlink(
+        self,
+        cell: str,
+        target: str,
+        display: str | None = None,
+        tooltip: str | None = None,
+        internal: bool = False,
+    ) -> None:
+        a1 = str(cell).strip().upper()
+        if display is not None:
+            self[a1].value = display
+        self._workbook._rust.add_hyperlink(self._title, a1, str(target), tooltip, bool(internal))
+
+    @property
+    def comments(self) -> list[dict[str, Any]]:
+        raw = self._workbook._rust.read_comments(self._title)
+        if isinstance(raw, list):
+            return [dict(x) for x in raw if isinstance(x, dict)]
+        return []
+
+    def add_comment(self, cell: str, text: str, author: str | None = None) -> None:
+        a1 = str(cell).strip().upper()
+        self._workbook._rust.add_comment(self._title, a1, str(text), author)
+
+    @property
+    def data_validations(self) -> list[dict[str, Any]]:
+        raw = self._workbook._rust.read_data_validations(self._title)
+        if isinstance(raw, list):
+            return [dict(x) for x in raw if isinstance(x, dict)]
+        return []
+
+    def add_data_validation(self, validation: dict[str, Any]) -> None:
+        """Add a data validation rule. Accepts either a flat dict or
+        ``{"validation": {...}}`` wrapper (for ExcelBench compatibility)."""
+        payload: dict[str, Any] = dict(validation)
+        inner = payload.get("validation")
+        if isinstance(inner, dict):
+            payload = dict(inner)
+        self._workbook._rust.add_data_validation(self._title, payload)
+
+    @property
+    def conditional_formats(self) -> list[dict[str, Any]]:
+        raw = self._workbook._rust.read_conditional_formats(self._title)
+        if isinstance(raw, list):
+            return [dict(x) for x in raw if isinstance(x, dict)]
+        return []
+
+    def add_conditional_format(self, rule: dict[str, Any]) -> None:
+        """Add a conditional formatting rule. Accepts either a flat dict or
+        ``{"cf_rule": {...}}`` wrapper (for ExcelBench compatibility)."""
+        payload: dict[str, Any] = dict(rule)
+        inner = payload.get("cf_rule")
+        if isinstance(inner, dict):
+            payload = dict(inner)
+        self._workbook._rust.add_conditional_format(self._title, payload)
+
+    @property
+    def images(self) -> list[dict[str, Any]]:
+        raw = self._workbook._rust.read_images(self._title)
+        if isinstance(raw, list):
+            return [dict(x) for x in raw if isinstance(x, dict)]
+        return []
+
+    def add_image(
+        self,
+        cell: str,
+        path: str,
+        *,
+        offset: tuple[int, int] | list[int] | None = None,
+    ) -> None:
+        a1 = str(cell).strip().upper()
+        off: tuple[int, int] | None = None
+        if offset is not None:
+            x = int(offset[0])
+            y = int(offset[1])
+            off = (x, y)
+        self._workbook._rust.add_image(self._title, a1, str(path), off)
 
     # ---------------------------------------------------------------------
     # Internal helpers used by Cell
